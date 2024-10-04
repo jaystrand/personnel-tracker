@@ -1,5 +1,11 @@
-CREATE DATABASE employeeTracker;
-\c employeeTracker;
+DROP DATABASE IF EXISTS employeetracker_db;
+
+CREATE DATABASE employeetracker_db;
+
+\c employeetracker_db;
+
+SELECT current_database();
+
 
 CREATE TABLE department (
 id SERIAL PRIMARY KEY,
