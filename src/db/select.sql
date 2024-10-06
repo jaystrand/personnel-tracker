@@ -1,3 +1,9 @@
+SELECT
+    d.id,
+    d.name AS department
+FROM department d;
+
+
 SELECT 
     r.id,
     r.title,
