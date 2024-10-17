@@ -41,6 +41,12 @@ async function promptUser() {
         case 'Add a role':
             await addRole();
             break;
+        case 'Add an employee':
+            await addEmployee();
+            break;
+        case 'Update an employee role':
+            await updateEmployeeRole();
+            break;
 
 
     }
@@ -126,6 +132,74 @@ const departmentId = res.rows.find((department) => department.name === selectedD
         promptUser();
     }
     
+    async function addEmployee() {
+        const res = await pool.query('SELECT * FROM role');
+        const roleTitles = res.rows.map((role) => role.title);
+        const { firstName, lastName, selectedRole, managerId } = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'firstName',
+                message: 'Enter the first name of the employee:',
+                
+            },
+            {
+                type: 'input',
+                name: 'lastName',
+                message: 'Enter the last name of the employee:',
+            },
+            {
+                type: 'list',
+                name: 'selectedRole',
+                message: 'Choose the role for the employee:',
+                choices: roleTitles,
+            },
+            {
+                type: 'input',
+                name: 'managerId',
+                message: 'Enter the manager id of the employee:',
+            }
+        ]);
+
+        const roleId = res.rows.find((role) => role.title === selectedRole).id;
+
+        await pool.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)', [firstName, lastName, roleId, managerId]);
+        console.log(`Added ${firstName} ${lastName} to the database`);
+        promptUser();
+    }
+
+    async function updateEmployeeRole() {
+        const
+        res = await pool.query('SELECT * FROM employee');
+        const employees = res.rows.map((employee) => `${employee.first_name} ${employee.last_name}`);
+        const { selectedEmployee } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'selectedEmployee',
+                message: 'Choose the employee to update:',
+                choices: employees,
+            },
+        ]);
+
+        const res2 = await pool.query('SELECT * FROM role');
+        const roles = res2.rows.map((role) => role.title);
+        const { selectedRole } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'selectedRole',
+                message: 'Choose the new role for the employee:',
+                choices: roles,
+            },
+        ]);
+
+        const employeeId = res.rows.find((employee) => `${employee.first_name} ${employee.last_name}` === selectedEmployee).id;
+        const roleId = res2.rows.find((role) => role.title === selectedRole).id;
+
+        await pool.query('UPDATE employee SET role_id = $1 WHERE id = $2', [roleId, employeeId]);
+        console.log(`Updated the role of ${selectedEmployee}`);
+        promptUser();
+    }
+
+
     
  
     await connectTodb();
