@@ -1,17 +1,9 @@
-import express from 'express';
 import inquirer from 'inquirer';
-import { pool, connectToDb } from './connection.js';
+import { pool, connectTodb } from './connection.js';
 
-await connectToDb();
-
-const PORT = process.env.PORT || 3000;
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 async function promptUser() {
-    const res = await pool.query('SELECT * FROM department');
-    console.table(res.rows);
+    
 
     const { action } = await inquirer.prompt([
         {
@@ -31,48 +23,41 @@ async function promptUser() {
         },
     ]);
 
-    return { action };
-}
-
-async function viewAllRoles() {
-    const res = await pool.query('SELECT role.id, role.title, department.name AS department, role.salary FROM role JOIN department ON role.department_id = department.id');
-
-    app.use(express.urlencoded({ extended: false }));
-
-    function propmptUser() {
-        return inquirer.prompt([
-            {
-
-        type: 'list',
-        name: 'action',
-        message: 'What would you like to do?',
-        choices: [
-            'View all departments',
-            'View all roles',
-            'View all employees',
-            'Add a department',
-            'Add a role',
-            'Add an employee',
-            'Update an employee role',
-            'Quit',
-        ],
-    },
     
-]);
-}
-};
-
-
-    const { action } = await promptUser();
     switch (action) {
         case 'View all departments':
             await viewDepartments();
             break;
-        case 'exit':
-            pool.end();
-            process.exit(0);
-    }
+        case 'View all roles':
+            await viewAllRoles();
+            break;
+        case 'View all employees':
+            await viewEmployees();
+            break;
 
+        case 'Add a department':
+            await addDepartment();
+            break;
+        case 'Add a role':
+            await addRole();
+            break;
+
+
+    }
+}
+
+
+   
+
+async function viewAllRoles() {
+    const res = await pool.query('SELECT role.id, role.title, department.name AS department, role.salary FROM role JOIN department ON role.department = department.id');
+    console.table(res.rows);
+promptUser();
+    
+};
+
+
+    
     async function viewDepartments() {
         const res = await pool.query('SELECT * FROM department');
         console.table(res.rows);
@@ -82,11 +67,13 @@ async function viewAllRoles() {
     async function viewRoles() {
         const res = await pool.query('SELECT * FROM role');
         console.table(res.rows);
+        promptUser();
     }
 
     async function viewEmployees() {
         const res = await pool.query('SELECT * FROM employee');
         console.table(res.rows);
+        promptUser();
     }
 
     async function addDepartment() {
@@ -95,6 +82,7 @@ async function viewAllRoles() {
                 type: 'input',
                 name: 'name',
                 message: 'Enter the name of the department:',
+                
             },
         ]);
     
@@ -103,20 +91,44 @@ async function viewAllRoles() {
         promptUser();
     }
 
+    async function addRole() {
+        const res = await pool.query('SELECT * FROM department');
+        const departmentNames= res.rows.map((department) => department.name);
+        const { title, salary, selectedDepartment } = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'title',
+                message: 'Enter the name of the role:',
+                
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'Enter the amount of the salary:',
+            },
+            
+            {
+                type: 'list',
+                name: 'selectedDepartment',
+                message: 'Choose the department for the role:',
+                choices: departmentNames,
+            },  
 
 
+        ]);
+
+const departmentId = res.rows.find((department) => department.name === selectedDepartment).id;
 
 
-
-
-
-
-    app.use((_req, res) => {
-        res.status(404).end();
-    }
-    );
-
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
     
+        await pool.query('INSERT INTO role (title, salary, department) VALUES ($1, $2, $3)', [title, parseFloat(salary), parseInt(departmentId)]);
+        console.log(`Added ${title} to the database`);
+        promptUser();
+    }
+    
+    
+ 
+    await connectTodb();
+    promptUser();
+
+ 
